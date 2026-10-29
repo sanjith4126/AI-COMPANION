@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-companion-bg text-companion-text font-sans antialiased;
+  }
+}
+
+/* Custom scrollbar for transcripts */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-companion-surface rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-companion-accentLight;
+}
