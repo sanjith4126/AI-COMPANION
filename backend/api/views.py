@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 
 from api.supabase_client import get_supabase
-from api.tasks import extract_memory_task
+from api.tasks import run_memory_extraction
 
 logger = logging.getLogger(__name__)
 
@@ -94,18 +94,17 @@ def end_session(request):
         return JsonResponse({"error": "session_id required"}, status=400)
         
     supabase = get_supabase()
-    from datetime import datetime
-    import pytz
-    
-    now = datetime.now(pytz.utc).isoformat()
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc).isoformat()
     res = supabase.table("sessions").update({"ended_at": now}).eq("id", session_id).eq("user_id", request.user_id).execute()
     
     if not res.data:
         return JsonResponse({"error": "Session not found or already ended"}, status=404)
         
     # Trigger Celery task
-    extract_memory_task.delay(session_id, request.user_id)
-    
+    run_memory_extraction(session_id, request.user_id)
+
     return JsonResponse({"message": "Session ended. Memory extraction started.", "session": res.data[0]})
 
 
@@ -401,7 +400,7 @@ def extract_memory(request):
     session_id = request.data.get("session_id")
     if not session_id:
         return JsonResponse({"error": "session_id required"}, status=400)
-    extract_memory_task.delay(session_id, request.user_id)
+    run_memory_extraction(session_id, request.user_id)
     return JsonResponse({"message": "Memory extraction started"})
 
 @api_view(["GET"])

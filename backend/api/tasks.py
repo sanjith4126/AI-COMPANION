@@ -79,3 +79,13 @@ def extract_memory_task(session_id: str, user_id: str):
         # FIXED: More descriptive top-level error log
         logger.error(f"FATAL Task Error: extract_memory_task for session {session_id}: {e}")
         raise e
+
+
+def run_memory_extraction(session_id: str, user_id: str):
+    """Queue memory extraction on Celery; run it inline if Redis is unreachable."""
+    try:
+        extract_memory_task.delay(session_id, user_id)
+    except Exception as e:
+        # ponytail: without Redis this blocks the request (~5s + Gemini time); run Redis + a worker to keep it async
+        logger.warning(f"Celery broker unavailable ({e}); extracting memory inline")
+        extract_memory_task(session_id, user_id)
